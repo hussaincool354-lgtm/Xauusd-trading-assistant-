@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XAUUSD Trading Assistant</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#eee;font-family:Arial,sans-serif}
+main{max-width:700px;margin:auto;padding:15px}
+h1{font-size:22px;margin:5px 0}
+h2{font-size:17px}
+.card{background:#151d30;border:1px solid #293550;border-radius:15px;padding:15px;margin:12px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:12px;color:#aaa}
+input,select{width:100%;padding:12px;margin-top:5px;border-radius:9px;border:1px solid #40506d;background:#0d1527;color:white;font-size:15px}
+button{width:100%;padding:14px;margin-top:10px;border:0;border-radius:10px;background:#2563eb;color:white;font-size:16px;font-weight:bold}
+.reset{background:#374151}
+.status{text-align:center;padding:15px;border-radius:12px;font-weight:bold;font-size:18px;margin-top:10px}
+.wait{background:#493b08;color:#ffe68a}
+.buy{background:#064e3b;color:#a7f3d0}
+.sell{background:#7f1d1d;color:#fecaca}
+.row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #293550}
+.small{font-size:12px;color:#9ca3af;line-height:1.5}
+</style>
+</head>
+
+<body>
+<main>
+
+<h1>🥇 XAUUSD Trading Assistant</h1>
+<div class="small">Manual data entry • Automatic calculations</div>
+
+<div class="card">
+<h2>H1 Data</h2>
+<div class="small">Enter the 5 most recently completed H1 candle closes. Do NOT use the current forming candle.</div>
+
+<div class="grid">
+<div><label>Close 1 — oldest</label><input id="c1" type="number" step=".01"></div>
+<div><label>Close 2</label><input id="c2" type="number" step=".01"></div>
+<div><label>Close 3</label><input id="c3" type="number" step=".01"></div>
+<div><label>Close 4</label><input id="c4" type="number" step=".01"></div>
+<div><label>Close 5 — newest</label><input id="c5" type="number" step=".01"></div>
+<div><label>Previous H1 High</label><input id="ph" type="number" step=".01"></div>
+<div><label>Previous H1 Low</label><input id="pl" type="number" step=".01"></div>
+<div><label>Previous H1 Close</label><input id="pc" type="number" step=".01"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>Breakout / Retest</h2>
+<div class="grid">
+<div><label>Breakout level</label><input id="bo" type="number" step=".01"></div>
+<div><label>Retest price</label><input id="rt" type="number" step=".01"></div>
+<div><label>M15 close after retest</label><input id="m15" type="number" step=".01"></div>
+<div><label>Direction</label>
+<select id="dir">
+<option value="BUY">BUY</option>
+<option value="SELL">SELL</option>
+</select>
+</div>
+</div>
+<div class="small">BUY: M15 close above breakout = retest holds.<br>
+SELL: M15 close below breakout = retest holds.</div>
+</div>
+
+<div class="card">
+<h2>Trade Plan</h2>
+<div class="grid">
+<div><label>Entry</label><input id="entry" type="number" step=".01"></div>
+<div><label>Stop Loss</label><input id="sl" type="number" step=".01"></div>
+<div><label>TP1</label><input id="tp1" type="number" step=".01"></div>
+<div><label>TP2</label><input id="tp2" type="number" step=".01"></div>
+</div>
+
+<button onclick="analyze()">ANALYZE XAUUSD</button>
+<button class="reset" onclick="resetApp()">RESET</button>
+</div>
+
+<div class="card">
+<h2>Results</h2>
+<div id="status" class="status wait">WAITING FOR DATA</div>
+<div id="results"></div>
+</div>
+
+<div class="small">
+This tool is for analysis and planning only. It does not place broker orders.
+</div>
+
+</main>
+
+<script>
+function num(id){
+ let x=parseFloat(document.getElementById(id).value);
+ return Number.isFinite(x)?x:null;
+}
+
+function f(x){
+ return x==null||!Number.isFinite(x)?"—":x.toFixed(2);
+}
+
+function add(label,value){
+ return '<div class="row"><span>'+label+'</span><b>'+value+'</b></div>';
+}
+
+function analyze(){
+
+ let c=[num("c1"),num("c2"),num("c3"),num("c4"),num("c5")];
+
+ if(c.some(x=>x===null)){
+  document.getElementById("status").className="status wait";
+  document.getElementById("status").textContent="ENTER ALL 5 H1 CLOSES";
+  return;
+ }
+
+ /* Population standard deviation */
+ let mean=c.reduce((a,b)=>a+b,0)/5;
+
+ let variance=c.reduce((s,x)=>s+Math.pow(x-mean,2),0)/5;
+
+ let sd=Math.sqrt(variance);
+
+ let html="";
+
+ html+=add("H1 Mean",f(mean));
+ html+=add("SD",f(sd));
+
+ html+=add("SD +1",f(mean+sd));
+ html+=add("SD -1",f(mean-sd));
+
+ html+=add("SD +2",f(mean+2*sd));
+ html+=add("SD -2",f(mean-2*sd));
+
+ html+=add("SD +3",f(mean+3*sd));
+ html+=add("SD -3",f(mean-3*sd));
+
+ /* Pivot */
+ let h=num("ph");
+ let l=num("pl");
+ let cl=num("pc");
+
+ if(h!==null&&l!==null&&cl!==null){
+
+  let p=(h+l+cl)/
